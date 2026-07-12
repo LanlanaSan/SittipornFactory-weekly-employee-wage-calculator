@@ -103,3 +103,5 @@ def calculate():
         "grand_total": grand_total,
         "total_employees": len(calculated_results)
     })
+
+application = app
