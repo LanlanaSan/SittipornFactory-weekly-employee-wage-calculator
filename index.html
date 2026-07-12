@@ -24,12 +24,13 @@
         input[type="text"], input[type="number"] { width: 100%; box-sizing: border-box; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 14px; }
         input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
         
-        /* Sidebar mini form inputs */
+        /* Sidebar fields styling */
         .sidebar input[type="text"], .sidebar input[type="number"] { padding: 4px 6px; font-size: 13px; }
         .sidebar-actions { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 5px; margin-bottom: 20px; background: #f1f5f9; padding: 8px; border-radius: 4px; }
         .sidebar-actions-emp { display: grid; grid-template-columns: 2fr 1.5fr auto; gap: 5px; margin-bottom: 20px; background: #f1f5f9; padding: 8px; border-radius: 4px; }
 
-        .btn { background-color: #2563eb; color: white; border: none; padding: 10px 20px; font-size: 14px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: background 0.2s; }
+        /* Global buttons */
+        .btn { background-color: #2563eb; color: white; border: none; padding: 10px 20px; font-size: 14px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: background 0.2s; display: inline-flex; align-items: center; justify-content: center; }
         .btn:hover { background-color: #1d4ed8; }
         .btn-add { background-color: #10b981; margin-bottom: 15px; }
         .btn-add:hover { background-color: #059669; }
@@ -37,6 +38,18 @@
         .btn-xs { padding: 2px 6px; font-size: 11px; font-weight: normal; }
         .btn-danger { background-color: #ef4444; }
         .btn-danger:hover { background-color: #dc2626; }
+        
+        /* Toggle button styles */
+        .btn-toggle-edit { width: 100%; background-color: #4b5563; margin-bottom: 20px; padding: 12px; font-size: 15px; }
+        .btn-toggle-edit.active { background-color: #d97706; }
+        .btn-toggle-edit.active:hover { background-color: #b45309; }
+        
+        /* Utility styles to switch between views */
+        .edit-mode-only { display: none !important; }
+        .is-editing .edit-mode-only { display: grid !important; }
+        .is-editing .edit-mode-table-cell { display: table-cell !important; }
+        .view-mode-table-cell { display: table-cell; }
+        .is-editing .view-mode-table-cell { display: none !important; }
         
         .autocomplete-wrapper { position: relative; }
         .autocomplete-items { position: absolute; border: 1px solid #d4d4d4; border-bottom: none; border-top: none; z-index: 99; top: 100%; left: 0; right: 0; max-height: 150px; overflow-y: auto; background-color: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
@@ -53,22 +66,32 @@
     </style></head><body><div class="container">
     
     <!-- LEFT SIDEBAR: MANAGE DATA IN-APP -->
-    <div class="sidebar no-print">
+    <div class="sidebar no-print" id="sidebar-container">
+        <button type="button" class="btn btn-toggle-edit" id="toggle-edit-btn" onclick="toggleEditMode()">
+            ⚙️ แก้ไขข้อมูลรายชื่อ/ราคาสินค้า
+        </button>
+
         <h3>👥 พนักงาน & ค่าแรง</h3>
-        <div class="sidebar-actions-emp">
+        <div class="sidebar-actions-emp edit-mode-only">
             <input type="text" id="new-emp-name" placeholder="ชื่อพนักงานใหม่">
             <input type="number" id="new-emp-wage" placeholder="ค่าแรง/วัน" min="0">
             <button type="button" class="btn btn-sm btn-add" style="margin:0;" onclick="addNewEmployee()">เพิ่ม</button>
         </div>
         <div class="scroll-list">
             <table>
-                <thead><tr><th>ชื่อ</th><th>วัน (THB)</th><th style="width:40px;">ลบ</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>ชื่อ</th>
+                        <th>วัน (THB)</th>
+                        <th class="edit-mode-only edit-mode-table-cell" style="width:40px;">ลบ</th>
+                    </tr>
+                </thead>
                 <tbody id="sidebar-employees-body"></tbody>
             </table>
         </div>
 
         <h3>📦 สินค้า & ค่าชิ้นงาน</h3>
-        <div class="sidebar-actions">
+        <div class="sidebar-actions edit-mode-only">
             <input type="text" id="new-prod-name" placeholder="สินค้าใหม่">
             <input type="text" id="new-prod-unit" placeholder="หน่วย">
             <input type="number" id="new-prod-price" placeholder="ราคา" step="0.1" min="0">
@@ -76,7 +99,14 @@
         </div>
         <div class="scroll-list">
             <table>
-                <thead><tr><th>สินค้า</th><th>หน่วย</th><th>ราคา</th><th style="width:40px;">ลบ</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>สินค้า</th>
+                        <th>หน่วย</th>
+                        <th>ราคา</th>
+                        <th class="edit-mode-only edit-mode-table-cell" style="width:40px;">ลบ</th>
+                    </tr>
+                </thead>
                 <tbody id="sidebar-products-body"></tbody>
             </table>
         </div>
@@ -141,7 +171,7 @@
     </div></div>
 
 <script>
-// Master Data Objects (Users can mutate these variables now)
+// Master Data Objects
 let employeeData = [
     {"name": "โอ่ง", "daily_wage": 350}, {"name": "สุ", "daily_wage": 290},
     {"name": "สาย", "daily_wage": 320}, {"name": "แยม", "daily_wage": 270},
@@ -167,7 +197,7 @@ let productData = [
     {"name": "รอก", "unit": "อัน", "price": 1.0}
 ];
 
-// Lookup Maps and Autocomplete Arrays
+let isEditingMode = false;
 let empMap, prodMap, empNames, prodNames;
 
 function rebuildLookups() {
@@ -186,23 +216,54 @@ window.onload = function() {
     document.getElementById('doc-id').innerText = docIdStr;
     
     rebuildLookups();
-    renderSidebarEmployees();
-    renderSidebarProducts();
+    renderSidebars();
     addWorkerCard();
 };
 
-// --- SIDEBAR EDITABLE RENDERING ---
+// Toggle button function switcher
+function toggleEditMode() {
+    isEditingMode = !isEditingMode;
+    const sidebar = document.getElementById('sidebar-container');
+    const button = document.getElementById('toggle-edit-btn');
+    
+    if (isEditingMode) {
+        sidebar.classList.add('is-editing');
+        button.classList.add('active');
+        button.innerText = "💾 บันทึกการแก้ไข (Save Changes)";
+    } else {
+        sidebar.classList.remove('is-editing');
+        button.classList.remove('active');
+        button.innerText = "⚙️ แก้ไขข้อมูลรายชื่อ/ราคาสินค้า";
+    }
+    renderSidebars();
+}
+
+function renderSidebars() {
+    renderSidebarEmployees();
+    renderSidebarProducts();
+}
+
+// Sidebar rendering handling modes intelligently
 function renderSidebarEmployees() {
     const tbody = document.getElementById('sidebar-employees-body');
     tbody.innerHTML = '';
     employeeData.forEach((emp, index) => {
-        tbody.innerHTML += `
-            <tr>
-                <td><input type="text" value="${emp.name}" onchange="updateEmployeeField(${index}, 'name', this.value)"></td>
-                <td><input type="number" value="${emp.daily_wage}" onchange="updateEmployeeField(${index}, 'daily_wage', this.value)" min="0"></td>
-                <td class="text-center"><button type="button" class="btn btn-xs btn-danger" onclick="deleteEmployee(${index})">ลบ</button></td>
-            </tr>
-        `;
+        if (isEditingMode) {
+            tbody.innerHTML += `
+                <tr>
+                    <td><input type="text" value="${emp.name}" onchange="updateEmployeeField(${index}, 'name', this.value)"></td>
+                    <td><input type="number" value="${emp.daily_wage}" onchange="updateEmployeeField(${index}, 'daily_wage', this.value)" min="0"></td>
+                    <td class="text-center edit-mode-table-cell"><button type="button" class="btn btn-xs btn-danger" onclick="deleteEmployee(${index})">ลบ</button></td>
+                </tr>
+            `;
+        } else {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${emp.name}</td>
+                    <td>${emp.daily_wage.toLocaleString()}</td>
+                </tr>
+            `;
+        }
     });
 }
 
@@ -210,18 +271,28 @@ function renderSidebarProducts() {
     const tbody = document.getElementById('sidebar-products-body');
     tbody.innerHTML = '';
     productData.forEach((prod, index) => {
-        tbody.innerHTML += `
-            <tr>
-                <td><input type="text" value="${prod.name}" onchange="updateProductField(${index}, 'name', this.value)"></td>
-                <td><input type="text" value="${prod.unit}" onchange="updateProductField(${index}, 'unit', this.value)"></td>
-                <td><input type="number" value="${prod.price}" step="0.1" onchange="updateProductField(${index}, 'price', this.value)" min="0"></td>
-                <td class="text-center"><button type="button" class="btn btn-xs btn-danger" onclick="deleteProduct(${index})">ลบ</button></td>
-            </tr>
-        `;
+        if (isEditingMode) {
+            tbody.innerHTML += `
+                <tr>
+                    <td><input type="text" value="${prod.name}" onchange="updateProductField(${index}, 'name', this.value)"></td>
+                    <td><input type="text" value="${prod.unit}" onchange="updateProductField(${index}, 'unit', this.value)"></td>
+                    <td><input type="number" value="${prod.price}" step="0.1" onchange="updateProductField(${index}, 'price', this.value)" min="0"></td>
+                    <td class="text-center edit-mode-table-cell"><button type="button" class="btn btn-xs btn-danger" onclick="deleteProduct(${index})">ลบ</button></td>
+                </tr>
+            `;
+        } else {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${prod.name}</td>
+                    <td>${prod.unit}</td>
+                    <td>${prod.price.toLocaleString(undefined, {minimumFractionDigits: 1})}</td>
+                </tr>
+            `;
+        }
     });
 }
 
-// Inline value adjustments
+// Real-time local object value updates
 function updateEmployeeField(index, field, value) {
     employeeData[index][field] = field === 'daily_wage' ? parseFloat(value) || 0 : value;
     rebuildLookups();
@@ -232,7 +303,7 @@ function updateProductField(index, field, value) {
     rebuildLookups();
 }
 
-// Add Item Actions
+// Insertion operations
 function addNewEmployee() {
     const nameInput = document.getElementById('new-emp-name');
     const wageInput = document.getElementById('new-emp-wage');
@@ -268,7 +339,7 @@ function addNewProduct() {
     renderSidebarProducts();
 }
 
-// Delete Item Actions
+// Elimination loops
 function deleteEmployee(index) {
     if(confirm(`ต้องการลบพนักงาน "${employeeData[index].name}" ใช่หรือไม่?`)) {
         employeeData.splice(index, 1);
@@ -353,7 +424,6 @@ function updateWorkerCount() {
     document.getElementById('worker-count').innerText = document.querySelectorAll('.worker-card').length;
 }
 
-// Updated autocomplete system reads arrays dynamically through function calls
 function setupAutocomplete(inp, getArrayCallback, onSelectCallback) {
     inp.addEventListener("input", function() {
         let a, b, val = this.value;
@@ -403,8 +473,6 @@ function calculateWages(event) {
     workerCards.forEach(card => {
         const empName = card.querySelector('[data-field="name"]').value.trim();
         const daysWorked = parseFloat(card.querySelector('[data-field="days"]').value) || 0;
-        
-        // Always grab current baseline wage from map in case the sidebar updated midway
         const baseWage = empMap.get(empName) || parseFloat(card.querySelector('[data-field="wage"]').value) || 0;
         
         if (!empName) return;
