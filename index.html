@@ -17,14 +17,16 @@
         
         .metadata-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; font-size: 14px; background: #f8fafc; padding: 15px; border-radius: 6px; }
         
+        /* Form entry card structural layout rules */
         .worker-card { border: 1px solid #cbd5e1; border-radius: 6px; padding: 15px; margin-bottom: 15px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .worker-labels-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; gap: 10px; font-size: 12px; font-weight: bold; color: #64748b; margin-bottom: 4px; padding-left: 2px; }
         .worker-header { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; gap: 10px; margin-bottom: 12px; align-items: center; }
         .product-section { background: #f8fafc; border-radius: 4px; padding: 10px; border-left: 4px solid #3b82f6; }
         
         input[type="text"], input[type="number"] { width: 100%; box-sizing: border-box; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 14px; }
         input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
         
-        /* Sidebar fields styling */
+        /* Sidebar styling */
         .sidebar input[type="text"], .sidebar input[type="number"] { padding: 4px 6px; font-size: 13px; }
         .sidebar-actions { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 5px; margin-bottom: 20px; background: #f1f5f9; padding: 8px; border-radius: 4px; }
         .sidebar-actions-emp { display: grid; grid-template-columns: 2fr 1.2fr 1.2fr auto; gap: 5px; margin-bottom: 20px; background: #f1f5f9; padding: 8px; border-radius: 4px; }
@@ -173,7 +175,6 @@
     </div></div>
 
 <script>
-// Baseline Default Arrays with base rates and night rates (+50 default applied here)
 const defaultEmployees = [
     {"name": "โอ่ง", "daily_wage": 350, "night_wage": 50}, {"name": "สุ", "daily_wage": 290, "night_wage": 50},
     {"name": "สาย", "daily_wage": 320, "night_wage": 50}, {"name": "แยม", "daily_wage": 270, "night_wage": 50},
@@ -208,7 +209,6 @@ function loadDataFromStorage() {
     const storedEmp = localStorage.getItem('factory_employees_v2');
     const storedProd = localStorage.getItem('factory_products_v2');
     
-    // Fallback to updating older storage keys if present
     if(!storedEmp && localStorage.getItem('factory_employees')) {
         const legacyData = JSON.parse(localStorage.getItem('factory_employees'));
         employeeData = legacyData.map(e => ({...e, "night_wage": e.daily_wage + 50}));
@@ -377,6 +377,14 @@ function deleteEmployee(index) {
     }
 }
 
+function deleteProduct(index) {
+    if(confirm(`ต้องการลบสินค้า "${productData[index].name}" ใช่หรือไม่?`)) {
+        productData.splice(index, 1);
+        rebuildLookups();
+        renderSidebarProducts();
+    }
+}
+
 // --- WORKER ENTRY GENERATION ---
 function addWorkerCard() {
     const container = document.getElementById('workers-container');
@@ -387,14 +395,23 @@ function addWorkerCard() {
     card.id = cardId;
     
     card.innerHTML = `
+        <!-- Explicit layout header row added above attributes -->
+        <div class="worker-labels-grid">
+            <div>Worker Name</div>
+            <div>Day</div>
+            <div>Night</div>
+            <div>Daily Wage</div>
+            <div>Overtime Wage</div>
+            <div></div>
+        </div>
         <div class="worker-header">
             <div class="autocomplete-wrapper">
                 <input type="text" placeholder="เลือกชื่อพนักงาน..." class="emp-input" data-field="name" required autocomplete="off">
             </div>
-            <div><input type="number" placeholder="วันปกติ" data-field="days" value="0" min="0" step="0.5" required title="จำนวนวันงานปกติ"></div>
-            <div><input type="number" placeholder="จำนวนคืน" data-field="nights" value="0" min="0" step="0.5" required title="จำนวนคืนทำงาน (O.T.)"></div>
-            <div><input type="number" placeholder="ค่าแรง/วัน" data-field="wage" value="0" readonly style="background:#f1f5f9;" title="ค่าแรงกลางวัน"></div>
-            <div><input type="number" placeholder="ค่าแรง/คืน" data-field="night-wage" value="0" readonly style="background:#f1f5f9;" title="ค่าแรงกลางคืน"></div>
+            <div><input type="number" placeholder="วันปกติ" data-field="days" value="0" min="0" step="0.5" required></div>
+            <div><input type="number" placeholder="จำนวนคืน" data-field="nights" value="0" min="0" step="0.5" required></div>
+            <div><input type="number" placeholder="ค่าแรง/วัน" data-field="wage" value="0" readonly style="background:#f1f5f9;"></div>
+            <div><input type="number" placeholder="ค่าแรง/คืน" data-field="night-wage" value="0" readonly style="background:#f1f5f9;"></div>
             <div><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.worker-card').remove(); updateWorkerCount();">ลบคนงาน</button></div>
         </div>
         <div class="product-section">
