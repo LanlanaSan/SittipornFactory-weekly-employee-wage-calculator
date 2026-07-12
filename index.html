@@ -1,0 +1,348 @@
+<!DOCTYPE html><html lang="th"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factory Wage Calculator</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
+        .sidebar { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); height: fit-content; }
+        .main-content { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h2, h3 { color: #2c3e50; border-bottom: 2px solid #ecf0f1; padding-bottom: 8px; margin-top: 0; }
+        .text-center { text-align: center; }
+        
+        .scroll-list { max-height: 250px; overflow-y: auto; margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 14px; }
+        th, td { padding: 10px; border: 1px solid #e2e8f0; text-align: left; }
+        th { background-color: #f8fafc; color: #475569; }
+        
+        .metadata-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; font-size: 14px; background: #f8fafc; padding: 15px; border-radius: 6px; }
+        .form-row { border-bottom: 1px solid #f1f5f9; padding: 8px 0; }
+        
+        input[type="text"], input[type="number"] { width: 90%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 14px; }
+        input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
+        
+        .btn { background-color: #2563eb; color: white; border: none; padding: 10px 20px; font-size: 14px; border-radius: 4px; cursor: pointer; font-weight: 600; }
+        .btn:hover { background-color: #1d4ed8; }
+        .btn-add { background-color: #10b981; margin-bottom: 15px; }
+        .btn-add:hover { background-color: #059669; }
+        
+        .autocomplete-wrapper { position: relative; }
+        .autocomplete-items { position: absolute; border: 1px solid #d4d4d4; border-bottom: none; border-top: none; z-index: 99; top: 100%; left: 0; right: 0; max-height: 150px; overflow-y: auto; background-color: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .autocomplete-items div { padding: 10px; cursor: pointer; background-color: #fff; border-bottom: 1px solid #d4d4d4; }
+        .autocomplete-items div:hover { background-color: #e9e9e9; }
+        
+        #bill-result { margin-top: 30px; display: none; background: #fff; border: 2px dashed #94a3b8; padding: 25px; border-radius: 4px; }
+        @media print {
+            body * { visibility: hidden; }
+            #bill-result, #bill-result * { visibility: visible; }
+            #bill-result { position: absolute; left: 0; top: 0; width: 100%; border: none; }
+            .no-print { display: none; }
+        }
+    </style></head><body><div class="container">
+    <div class="sidebar no-print">
+        <h3>👥 พนักงาน & ค่าแรง (Employees)</h3>
+        <div class="scroll-list">
+            <table>
+                <thead>
+                    <tr><th>ชื่อ</th><th>วัน (THB)</th></tr>
+                </thead>
+                <tbody id="sidebar-employees-body">
+                    <!-- Loaded dynamically via JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <h3>📦 สินค้า & ค่าชิ้นงาน (Products)</h3>
+        <div class="scroll-list">
+            <table>
+                <thead>
+                    <tr><th>สินค้า</th><th>หน่วย</th><th>ต่อหน่วย</th></tr>
+                </thead>
+                <tbody id="sidebar-products-body">
+                    <!-- Loaded dynamically via JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <h2 class="text-center no-print">Weekly wage report</h2>
+        
+        <form id="wage-form" onsubmit="calculateWages(event)" class="no-print">
+            <div class="metadata-grid">
+                <div><strong>วันที่ (Date):</strong> <span id="current-date"></span></div>
+                <div><strong>เลขที่เอกสาร (Doc ID):</strong> <span id="doc-id"></span></div>
+                <div><strong>จำนวนคนงานสัปดาห์นี้ (Active Workers):</strong> <span id="worker-count">1</span></div>
+            </div>
+
+            <button type="button" class="btn btn-add" onclick="addRow()">+ เพิ่มแถวพนักงาน (Add Row)</button>
+
+            <table id="input-table">
+                <thead>
+                    <tr>
+                        <th>ชื่อพนักงาน</th>
+                        <th>จำนวนวันงาน</th>
+                        <th>ค่าแรง/วัน</th>
+                        <th>ชื่อสินค้า</th>
+                        <th>จำนวนสินค้า</th>
+                        <th>หน่วย</th>
+                    </tr>
+                </thead>
+                <tbody id="form-body">
+                    <!-- Javascript injected rows -->
+                </tbody>
+            </table>
+
+            <div class="text-center" style="margin-top: 20px;">
+                <button type="submit" class="btn">คำนวณและออกบิลจ่ายเงิน (Calculate & Generate Bill)</button>
+            </div>
+        </form>
+
+        <div id="bill-result">
+            <h1 class="text-center" style="margin-bottom: 5px;">ใบสรุปค่าแรงประจำสัปดาห์</h1>
+            <h3 class="text-center" style="margin-top: 0; color: #64748b;">Weekly wage report</h3>
+            
+            <div class="metadata-grid" style="background: none; border-bottom: 2px solid #333; padding-left:0; padding-right:0;">
+                <div><strong>เลขที่เอกสาร (Doc ID):</strong> <span id="bill-id"></span></div>
+                <div><strong>วันที่พิมพ์ (Date):</strong> <span id="bill-date"></span></div>
+                <div><strong>จำนวนคนงานทั้งหมด:</strong> <span id="bill-count"></span> คน</div>
+            </div>
+
+            <table style="margin-top: 20px;">
+                <thead>
+                    <tr>
+                        <th>employeename</th>
+                        <th>days work</th>
+                        <th>base daily wage</th>
+                        <th>productname</th>
+                        <th>quantity</th>
+                        <th>unit</th>
+                        <th>total</th>
+                        <th>sub total</th>
+                    </tr>
+                </thead>
+                <tbody id="bill-body">
+                </tbody>
+            </table>
+
+            <div style="text-align: right; margin-top: 25px; font-size: 20px;">
+                <strong>ยอดจ่ายรวมทั้งสิ้น (Grand Total Payment): </strong> 
+                <span id="bill-grand-total" style="text-decoration: underline; font-weight: bold; color: #1e3a8a;"></span> <strong>THB</strong>
+            </div>
+
+            <div class="text-center no-print" style="margin-top: 40px;">
+                <button class="btn" onclick="window.print()" style="background-color: #475569;">พิมพ์ใบเสร็จนี้ (Print / Save PDF)</button>
+            </div>
+        </div>
+    </div></div>
+
+<script>
+// --- DATA SET ---
+const employeeData = [
+    {"name": "โอ่ง", "daily_wage": 350, "night_wage": 50},
+    {"name": "สุ", "daily_wage": 290, "night_wage": 50},
+    {"name": "สุาย", "daily_wage": 320, "night_wage": 50},
+    {"name": "แยม", "daily_wage": 270, "night_wage": 50},
+    {"name": "คนไทย", "daily_wage": 280, "night_wage": 50},
+    {"name": "พม่า1", "daily_wage": 270, "night_wage": 50},
+    {"name": "พม่า2", "daily_wage": 270, "night_wage": 50},
+    {"name": "พม่า3", "daily_wage": 270, "night_wage": 50},
+    {"name": "พม่า4", "daily_wage": 270, "night_wage": 50},
+    {"name": "พม่า5", "daily_wage": 270, "night_wage": 50},
+    {"name": "พม่า6", "daily_wage": 270, "night_wage": 50}
+];
+
+const productData = [
+    {"name": "มือจับ", "unit": "อัน", "price": 0.6},
+    {"name": "ด้าม", "unit": "อัน", "price": 0.6},
+    {"name": "กลอน", "unit": "อัน", "price": 1.0},
+    {"name": "พลั่ว", "unit": "ชิ้น", "price": 0.6},
+    {"name": "พลั่วหนีบ", "unit": "ชิ้น", "price": 6.0},
+    {"name": "พลั่ว (เก่ง)", "unit": "โหล", "price": 20.0},
+    {"name": "น้ำ", "unit": "ถัง", "price": 15.0},
+    {"name": "พลั่วตัดใบ", "unit": "โหล", "price": 12.0},
+    {"name": "พลั่วพ่น", "unit": "โหล", "price": 20.0},
+    {"name": "บานพับ", "unit": "อัน", "price": 0.5},
+    {"name": "บานพับ (สอน)", "unit": "มัด", "price": 0.6},
+    {"name": "สมอสั้น", "unit": "อัน", "price": 2.0},
+    {"name": "สมอยาว", "unit": "อัน", "price": 2.0},
+    {"name": "ปักร่มอ๊อก", "unit": "อัน", "price": 2.0},
+    {"name": "ปักร่มใส่ห่วง", "unit": "อัน", "price": 2.0},
+    {"name": "ปักร่มปั๊ม", "unit": "อัน", "price": 0.6},
+    {"name": "คราดอ๊อก", "unit": "อัน", "price": 2.0},
+    {"name": "คราดบวกด้าม", "unit": "อัน", "price": 2.0},
+    {"name": "คราดปั๊ม", "unit": "อัน", "price": 0.6},
+    {"name": "กุญแจดัดเหล็ก 2x3", "unit": "อัน", "price": 3.0},
+    {"name": "กุญแจดัดเหล็ก 3x4", "unit": "อัน", "price": 4.0},
+    {"name": "กุญแจดัดเหล็ก 4x5", "unit": "อัน", "price": 4.0},
+    {"name": "กุญแจดัดเหล็ก 5x6", "unit": "อัน", "price": 4.0},
+    {"name": "แชลง", "unit": "อัน", "price": 2.0},
+    {"name": "รอก", "unit": "อัน", "price": 1.0}
+];
+
+// --- INITIALIZATION ---
+const empMap = new Map(employeeData.map(e => [e.name, e.daily_wage]));
+const prodMap = new Map(productData.map(p => [p.name, p]));
+const empNames = employeeData.map(e => e.name);
+const prodNames = productData.map(p => p.name);
+
+// Setup dynamic dates
+const now = new Date();
+const dateStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+const docIdStr = `WAGE-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+
+window.onload = function() {
+    document.getElementById('current-date').innerText = dateStr;
+    document.getElementById('doc-id').innerText = docIdStr;
+    
+    // Populate Sidebar Lists
+    const empSidebar = document.getElementById('sidebar-employees-body');
+    employeeData.forEach(e => {
+        empSidebar.innerHTML += `<tr><td>${e.name}</td><td>${e.daily_wage}</td></tr>`;
+    });
+    
+    const prodSidebar = document.getElementById('sidebar-products-body');
+    productData.forEach(p => {
+        prodSidebar.innerHTML += `<tr><td>${p.name}</td><td>${p.unit}</td><td>${p.price}</td></tr>`;
+    });
+    
+    addRow();
+};
+
+function addRow() {
+    const tbody = document.getElementById('form-body');
+    const tr = document.createElement('tr');
+    tr.className = 'form-row';
+    
+    tr.innerHTML = `
+        <td>
+            <div class="autocomplete-wrapper">
+                <input type="text" name="emp_name" class="emp-input" required autocomplete="off">
+            </div>
+        </td>
+        <td><input type="number" name="days_worked" value="0" min="0" step="0.5" required></td>
+        <td><input type="number" name="base_wage" value="0" min="0" readonly style="background:#f1f5f9;"></td>
+        <td>
+            <div class="autocomplete-wrapper">
+                <input type="text" name="prod_name" class="prod-input" autocomplete="off">
+            </div>
+        </td>
+        <td><input type="number" name="prod_qty" value="0" min="0"></td>
+        <td><input type="text" name="prod_unit" readonly style="background:#f1f5f9;"></td>
+    `;
+    
+    tbody.appendChild(tr);
+    
+    setupAutocomplete(tr.querySelector('.emp-input'), empNames, function(val) {
+        tr.querySelector('input[name="base_wage"]').value = empMap.get(val) || 0;
+    });
+    
+    setupAutocomplete(tr.querySelector('.prod-input'), prodNames, function(val) {
+        const prod = prodMap.get(val);
+        if (prod) {
+            tr.querySelector('input[name="prod_unit"]').value = prod.unit;
+        }
+    });
+
+    updateActiveWorkerCount();
+}
+
+function updateActiveWorkerCount() {
+    const rows = document.querySelectorAll('#form-body tr').length;
+    document.getElementById('worker-count').innerText = rows;
+}
+
+function setupAutocomplete(inp, arr, onSelectCallback) {
+    inp.addEventListener("input", function(e) {
+        let a, b, val = this.value;
+        closeAllLists();
+        if (!val) { return false; }
+        
+        a = document.createElement("DIV");
+        a.setAttribute("class", "autocomplete-items");
+        this.parentNode.appendChild(a);
+        
+        for (let i = 0; i < arr.length; i++) {
+            if (arr[i].substring(0, val.length).toUpperCase() == val.toUpperCase()) {
+                b = document.createElement("DIV");
+                b.innerHTML = "<strong>" + arr[i].substring(0, val.length) + "</strong>" + arr[i].substring(val.length);
+                b.innerHTML += "<input type='hidden' value='" + arr[i] + "'>";
+                b.addEventListener("click", function(e) {
+                    inp.value = this.getElementsByTagName("input")[0].value;
+                    closeAllLists();
+                    if(onSelectCallback) onSelectCallback(inp.value);
+                });
+                a.appendChild(b);
+            }
+        }
+    });
+
+    function closeAllLists(elmnt) {
+        var x = document.getElementsByClassName("autocomplete-items");
+        for (var i = 0; i < x.length; i++) {
+            if (elmnt != x[i] && elmnt != inp) {
+                x[i].parentNode.removeChild(x[i]);
+            }
+        }
+    }
+    document.addEventListener("click", function (e) {
+        closeAllLists(e.target);
+    });
+}
+
+// --- FRONTEND CALCULATION ENGINE ---
+function calculateWages(event) {
+    event.preventDefault();
+    
+    const rows = document.querySelectorAll('#form-body tr');
+    let grandTotal = 0;
+    let validRecordsCount = 0;
+    
+    const bBody = document.getElementById('bill-body');
+    bBody.innerHTML = '';
+    
+    rows.forEach(row => {
+        const empName = row.querySelector('input[name="emp_name"]').value.trim();
+        const daysWorked = parseFloat(row.querySelector('input[name="days_worked"]').value) || 0;
+        const prodName = row.querySelector('input[name="prod_name"]').value.trim();
+        const prodQty = parseFloat(row.querySelector('input[name="prod_qty"]').value) || 0;
+        
+        if (!empName) return;
+        
+        const baseWage = empMap.get(empName) || 0;
+        const baseTotal = daysWorked * baseWage;
+        
+        const prodInfo = prodMap.get(prodName) || {};
+        const unit = prodInfo.unit || '-';
+        const rate = prodInfo.price || 0;
+        const prodTotal = prodQty * rate;
+        
+        const subTotal = baseTotal + prodTotal;
+        grandTotal += subTotal;
+        validRecordsCount++;
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${empName}</strong></td>
+            <td>${daysWorked}</td>
+            <td>${baseWage}</td>
+            <td>${prodName || '-'}</td>
+            <td>${prodQty}</td>
+            <td>${unit}</td>
+            <td>${prodTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+            <td><strong>${subTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></td>
+        `;
+        bBody.appendChild(tr);
+    });
+    
+    document.getElementById('bill-id').innerText = docIdStr;
+    document.getElementById('bill-date').innerText = dateStr;
+    document.getElementById('bill-count').innerText = validRecordsCount;
+    document.getElementById('bill-grand-total').innerText = grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2});
+    
+    const resultDiv = document.getElementById('bill-result');
+    resultDiv.style.display = 'block';
+    resultDiv.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body></html>
