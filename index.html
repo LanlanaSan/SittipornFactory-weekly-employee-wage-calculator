@@ -4,32 +4,37 @@
     <title>Factory Wage Calculator</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 1300px; margin: 0 auto; display: grid; grid-template-columns: 1fr 3fr; gap: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 1.2fr 2.8fr; gap: 20px; }
         .sidebar { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); height: fit-content; }
         .main-content { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         h2, h3 { color: #2c3e50; border-bottom: 2px solid #ecf0f1; padding-bottom: 8px; margin-top: 0; }
         .text-center { text-align: center; }
         
-        .scroll-list { max-height: 250px; overflow-y: auto; margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 4px; }
+        .scroll-list { max-height: 280px; overflow-y: auto; margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 4px; background: #fff; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 14px; }
-        th, td { padding: 10px; border: 1px solid #e2e8f0; text-align: left; }
-        th { background-color: #f8fafc; color: #475569; }
+        th, td { padding: 8px 10px; border: 1px solid #e2e8f0; text-align: left; vertical-align: middle; }
+        th { background-color: #f8fafc; color: #475569; position: sticky; top: 0; z-index: 10; }
         
         .metadata-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; font-size: 14px; background: #f8fafc; padding: 15px; border-radius: 6px; }
         
-        /* New Card Styles for individual workers */
-        .worker-card { border: 1px solid #cbd5e1; border-radius: 6px; padding: 15px; margin-bottom: 15px; background: #fff; }
+        .worker-card { border: 1px solid #cbd5e1; border-radius: 6px; padding: 15px; margin-bottom: 15px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         .worker-header { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; margin-bottom: 12px; align-items: center; }
         .product-section { background: #f8fafc; border-radius: 4px; padding: 10px; border-left: 4px solid #3b82f6; }
         
         input[type="text"], input[type="number"] { width: 100%; box-sizing: border-box; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 14px; }
         input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
         
-        .btn { background-color: #2563eb; color: white; border: none; padding: 10px 20px; font-size: 14px; border-radius: 4px; cursor: pointer; font-weight: 600; }
+        /* Sidebar mini form inputs */
+        .sidebar input[type="text"], .sidebar input[type="number"] { padding: 4px 6px; font-size: 13px; }
+        .sidebar-actions { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 5px; margin-bottom: 20px; background: #f1f5f9; padding: 8px; border-radius: 4px; }
+        .sidebar-actions-emp { display: grid; grid-template-columns: 2fr 1.5fr auto; gap: 5px; margin-bottom: 20px; background: #f1f5f9; padding: 8px; border-radius: 4px; }
+
+        .btn { background-color: #2563eb; color: white; border: none; padding: 10px 20px; font-size: 14px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: background 0.2s; }
         .btn:hover { background-color: #1d4ed8; }
         .btn-add { background-color: #10b981; margin-bottom: 15px; }
         .btn-add:hover { background-color: #059669; }
         .btn-sm { padding: 4px 8px; font-size: 12px; }
+        .btn-xs { padding: 2px 6px; font-size: 11px; font-weight: normal; }
         .btn-danger { background-color: #ef4444; }
         .btn-danger:hover { background-color: #dc2626; }
         
@@ -46,24 +51,38 @@
             .no-print { display: none; }
         }
     </style></head><body><div class="container">
+    
+    <!-- LEFT SIDEBAR: MANAGE DATA IN-APP -->
     <div class="sidebar no-print">
         <h3>👥 พนักงาน & ค่าแรง</h3>
+        <div class="sidebar-actions-emp">
+            <input type="text" id="new-emp-name" placeholder="ชื่อพนักงานใหม่">
+            <input type="number" id="new-emp-wage" placeholder="ค่าแรง/วัน" min="0">
+            <button type="button" class="btn btn-sm btn-add" style="margin:0;" onclick="addNewEmployee()">เพิ่ม</button>
+        </div>
         <div class="scroll-list">
             <table>
-                <thead><tr><th>ชื่อ</th><th>วัน (THB)</th></tr></thead>
+                <thead><tr><th>ชื่อ</th><th>วัน (THB)</th><th style="width:40px;">ลบ</th></tr></thead>
                 <tbody id="sidebar-employees-body"></tbody>
             </table>
         </div>
 
         <h3>📦 สินค้า & ค่าชิ้นงาน</h3>
+        <div class="sidebar-actions">
+            <input type="text" id="new-prod-name" placeholder="สินค้าใหม่">
+            <input type="text" id="new-prod-unit" placeholder="หน่วย">
+            <input type="number" id="new-prod-price" placeholder="ราคา" step="0.1" min="0">
+            <button type="button" class="btn btn-sm btn-add" style="margin:0;" onclick="addNewProduct()">เพิ่ม</button>
+        </div>
         <div class="scroll-list">
             <table>
-                <thead><tr><th>สินค้า</th><th>หน่วย</th><th>ราคา</th></tr></thead>
+                <thead><tr><th>สินค้า</th><th>หน่วย</th><th>ราคา</th><th style="width:40px;">ลบ</th></tr></thead>
                 <tbody id="sidebar-products-body"></tbody>
             </table>
         </div>
     </div>
 
+    <!-- MAIN INTERFACE -->
     <div class="main-content">
         <h2 class="text-center no-print">Weekly Wage Report Manager</h2>
         
@@ -77,7 +96,7 @@
             <button type="button" class="btn btn-add" onclick="addWorkerCard()">+ เพิ่มคนงาน (Add Worker)</button>
 
             <div id="workers-container">
-                <!-- Javascript injects worker cards here -->
+                <!-- Worker cards go here -->
             </div>
 
             <div class="text-center" style="margin-top: 20px;">
@@ -85,7 +104,7 @@
             </div>
         </form>
 
-        <!-- Bill Result View -->
+        <!-- Bill Receipt View -->
         <div id="bill-result">
             <h1 class="text-center" style="margin-bottom: 5px;">ใบสรุปค่าแรงประจำสัปดาห์</h1>
             <div class="metadata-grid" style="background: none; border-bottom: 2px solid #333; padding-left:0; padding-right:0;">
@@ -122,7 +141,8 @@
     </div></div>
 
 <script>
-const employeeData = [
+// Master Data Objects (Users can mutate these variables now)
+let employeeData = [
     {"name": "โอ่ง", "daily_wage": 350}, {"name": "สุ", "daily_wage": 290},
     {"name": "สาย", "daily_wage": 320}, {"name": "แยม", "daily_wage": 270},
     {"name": "คนไทย", "daily_wage": 280}, {"name": "พม่า1", "daily_wage": 270},
@@ -131,7 +151,7 @@ const employeeData = [
     {"name": "พม่า6", "daily_wage": 270}
 ];
 
-const productData = [
+let productData = [
     {"name": "มือจับ", "unit": "อัน", "price": 0.6}, {"name": "ด้าม", "unit": "อัน", "price": 0.6},
     {"name": "กลอน", "unit": "อัน", "price": 1.0}, {"name": "พลั่ว", "unit": "ชิ้น", "price": 0.6},
     {"name": "พลั่วหนีบ", "unit": "ชิ้น", "price": 6.0}, {"name": "พลั่ว (เก่ง)", "unit": "โหล", "price": 20.0},
@@ -147,10 +167,15 @@ const productData = [
     {"name": "รอก", "unit": "อัน", "price": 1.0}
 ];
 
-const empMap = new Map(employeeData.map(e => [e.name, e.daily_wage]));
-const prodMap = new Map(productData.map(p => [p.name, p]));
-const empNames = employeeData.map(e => e.name);
-const prodNames = productData.map(p => p.name);
+// Lookup Maps and Autocomplete Arrays
+let empMap, prodMap, empNames, prodNames;
+
+function rebuildLookups() {
+    empMap = new Map(employeeData.map(e => [e.name, e.daily_wage]));
+    prodMap = new Map(productData.map(p => [p.name, p]));
+    empNames = employeeData.map(e => e.name);
+    prodNames = productData.map(p => p.name);
+}
 
 const now = new Date();
 const dateStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
@@ -160,12 +185,107 @@ window.onload = function() {
     document.getElementById('current-date').innerText = dateStr;
     document.getElementById('doc-id').innerText = docIdStr;
     
-    employeeData.forEach(e => document.getElementById('sidebar-employees-body').innerHTML += `<tr><td>${e.name}</td><td>${e.daily_wage}</td></tr>`);
-    productData.forEach(p => document.getElementById('sidebar-products-body').innerHTML += `<tr><td>${p.name}</td><td>${p.unit}</td><td>${p.price}</td></tr>`);
-    
+    rebuildLookups();
+    renderSidebarEmployees();
+    renderSidebarProducts();
     addWorkerCard();
 };
 
+// --- SIDEBAR EDITABLE RENDERING ---
+function renderSidebarEmployees() {
+    const tbody = document.getElementById('sidebar-employees-body');
+    tbody.innerHTML = '';
+    employeeData.forEach((emp, index) => {
+        tbody.innerHTML += `
+            <tr>
+                <td><input type="text" value="${emp.name}" onchange="updateEmployeeField(${index}, 'name', this.value)"></td>
+                <td><input type="number" value="${emp.daily_wage}" onchange="updateEmployeeField(${index}, 'daily_wage', this.value)" min="0"></td>
+                <td class="text-center"><button type="button" class="btn btn-xs btn-danger" onclick="deleteEmployee(${index})">ลบ</button></td>
+            </tr>
+        `;
+    });
+}
+
+function renderSidebarProducts() {
+    const tbody = document.getElementById('sidebar-products-body');
+    tbody.innerHTML = '';
+    productData.forEach((prod, index) => {
+        tbody.innerHTML += `
+            <tr>
+                <td><input type="text" value="${prod.name}" onchange="updateProductField(${index}, 'name', this.value)"></td>
+                <td><input type="text" value="${prod.unit}" onchange="updateProductField(${index}, 'unit', this.value)"></td>
+                <td><input type="number" value="${prod.price}" step="0.1" onchange="updateProductField(${index}, 'price', this.value)" min="0"></td>
+                <td class="text-center"><button type="button" class="btn btn-xs btn-danger" onclick="deleteProduct(${index})">ลบ</button></td>
+            </tr>
+        `;
+    });
+}
+
+// Inline value adjustments
+function updateEmployeeField(index, field, value) {
+    employeeData[index][field] = field === 'daily_wage' ? parseFloat(value) || 0 : value;
+    rebuildLookups();
+}
+
+function updateProductField(index, field, value) {
+    productData[index][field] = field === 'price' ? parseFloat(value) || 0 : value;
+    rebuildLookups();
+}
+
+// Add Item Actions
+function addNewEmployee() {
+    const nameInput = document.getElementById('new-emp-name');
+    const wageInput = document.getElementById('new-emp-wage');
+    const name = nameInput.value.trim();
+    const wage = parseFloat(wageInput.value) || 0;
+    
+    if(!name) { alert('กรุณากรอกชื่อพนักงาน'); return; }
+    
+    employeeData.push({"name": name, "daily_wage": wage});
+    nameInput.value = '';
+    wageInput.value = '';
+    
+    rebuildLookups();
+    renderSidebarEmployees();
+}
+
+function addNewProduct() {
+    const nameInput = document.getElementById('new-prod-name');
+    const unitInput = document.getElementById('new-prod-unit');
+    const priceInput = document.getElementById('new-prod-price');
+    const name = nameInput.value.trim();
+    const unit = unitInput.value.trim() || "อัน";
+    const price = parseFloat(priceInput.value) || 0;
+    
+    if(!name) { alert('กรุณากรอกชื่อสินค้า'); return; }
+    
+    productData.push({"name": name, "unit": unit, "price": price});
+    nameInput.value = '';
+    unitInput.value = '';
+    priceInput.value = '';
+    
+    rebuildLookups();
+    renderSidebarProducts();
+}
+
+// Delete Item Actions
+function deleteEmployee(index) {
+    if(confirm(`ต้องการลบพนักงาน "${employeeData[index].name}" ใช่หรือไม่?`)) {
+        employeeData.splice(index, 1);
+        rebuildLookups();
+        renderSidebarEmployees();
+    }
+}
+
+function deleteProduct(index) {
+    if(confirm(`ต้องการลบสินค้า "${productData[index].name}" ใช่หรือไม่?`)) {
+        productData.splice(index, 1);
+        rebuildLookups();
+        renderSidebarProducts();
+    }
+}
+
+// --- WORKER ENTRY GENERATION ---
 function addWorkerCard() {
     const container = document.getElementById('workers-container');
     const cardId = 'worker-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
@@ -177,14 +297,14 @@ function addWorkerCard() {
     card.innerHTML = `
         <div class="worker-header">
             <div class="autocomplete-wrapper">
-                <input type="text" placeholder="เลือกชื่อพนักงาน" class="emp-input" data-field="name" required autocomplete="off">
+                <input type="text" placeholder="เลือกหรือค้นหาชื่อพนักงาน..." class="emp-input" data-field="name" required autocomplete="off">
             </div>
             <div><input type="number" placeholder="จำนวนวันงาน" data-field="days" value="0" min="0" step="0.5" required></div>
             <div><input type="number" placeholder="ค่าแรง/วัน" data-field="wage" value="0" readonly style="background:#f1f5f9;"></div>
             <div><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.worker-card').remove(); updateWorkerCount();">ลบคนงาน</button></div>
         </div>
         <div class="product-section">
-            <button type="button" class="btn btn-add btn-sm" style="margin-bottom:8px;" onclick="addProductRow('${cardId}')">+ เพิ่มรายการสินค้าชิ้นงาน</button>
+            <button type="button" class="btn btn-add btn-sm" style="margin-bottom:8px;" onclick="addProductRow('${cardId}')">+ เพิ่มชิ้นงาน</button>
             <table style="margin:0; background: transparent;">
                 <thead>
                     <tr><th>ชื่อสินค้า</th><th style="width:120px;">จำนวนที่ทำ</th><th style="width:80px;">หน่วย</th><th style="width:50px;"></th></tr>
@@ -196,7 +316,7 @@ function addWorkerCard() {
     
     container.appendChild(card);
     
-    setupAutocomplete(card.querySelector('.emp-input'), empNames, function(val) {
+    setupAutocomplete(card.querySelector('.emp-input'), () => empNames, function(val) {
         card.querySelector('[data-field="wage"]').value = empMap.get(val) || 0;
     });
     
@@ -211,7 +331,7 @@ function addProductRow(cardId) {
     tr.innerHTML = `
         <td>
             <div class="autocomplete-wrapper">
-                <input type="text" class="prod-input" placeholder="พิมพ์ชื่อสินค้า..." data-field="prod-name" required autocomplete="off">
+                <input type="text" class="prod-input" placeholder="พิมพ์เลือกชื่อสินค้า..." data-field="prod-name" required autocomplete="off">
             </div>
         </td>
         <td><input type="number" value="0" min="0" data-field="prod-qty" required></td>
@@ -221,7 +341,7 @@ function addProductRow(cardId) {
     
     tbody.appendChild(tr);
     
-    setupAutocomplete(tr.querySelector('.prod-input'), prodNames, function(val) {
+    setupAutocomplete(tr.querySelector('.prod-input'), () => prodNames, function(val) {
         const prod = prodMap.get(val);
         if (prod) {
             tr.querySelector('[data-field="prod-unit"]').value = prod.unit;
@@ -233,7 +353,8 @@ function updateWorkerCount() {
     document.getElementById('worker-count').innerText = document.querySelectorAll('.worker-card').length;
 }
 
-function setupAutocomplete(inp, arr, onSelectCallback) {
+// Updated autocomplete system reads arrays dynamically through function calls
+function setupAutocomplete(inp, getArrayCallback, onSelectCallback) {
     inp.addEventListener("input", function() {
         let a, b, val = this.value;
         closeAllLists();
@@ -243,11 +364,12 @@ function setupAutocomplete(inp, arr, onSelectCallback) {
         a.setAttribute("class", "autocomplete-items");
         this.parentNode.appendChild(a);
         
-        for (let i = 0; i < arr.length; i++) {
-            if (arr[i].substring(0, val.length).toUpperCase() == val.toUpperCase()) {
+        const currentArr = getArrayCallback();
+        for (let i = 0; i < currentArr.length; i++) {
+            if (currentArr[i].substring(0, val.length).toUpperCase() == val.toUpperCase()) {
                 b = document.createElement("DIV");
-                b.innerHTML = `<strong>${arr[i].substring(0, val.length)}</strong>${arr[i].substring(val.length)}`;
-                b.innerHTML += `<input type='hidden' value="${arr[i]}">`;
+                b.innerHTML = `<strong>${currentArr[i].substring(0, val.length)}</strong>${currentArr[i].substring(val.length)}`;
+                b.innerHTML += `<input type='hidden' value="${currentArr[i]}">`;
                 b.addEventListener("click", function() {
                     inp.value = this.getElementsByTagName("input")[0].value;
                     closeAllLists();
@@ -267,7 +389,7 @@ function setupAutocomplete(inp, arr, onSelectCallback) {
     document.addEventListener("click", function (e) { closeAllLists(e.target); });
 }
 
-// --- CALCULATION AND AGGREGATION ENGINE ---
+// --- ENGINE FOR TOTAL AGGREGATION ---
 function calculateWages(event) {
     event.preventDefault();
     
@@ -281,7 +403,9 @@ function calculateWages(event) {
     workerCards.forEach(card => {
         const empName = card.querySelector('[data-field="name"]').value.trim();
         const daysWorked = parseFloat(card.querySelector('[data-field="days"]').value) || 0;
-        const baseWage = parseFloat(card.querySelector('[data-field="wage"]').value) || 0;
+        
+        // Always grab current baseline wage from map in case the sidebar updated midway
+        const baseWage = empMap.get(empName) || parseFloat(card.querySelector('[data-field="wage"]').value) || 0;
         
         if (!empName) return;
         totalWorkersCount++;
