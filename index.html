@@ -171,8 +171,8 @@
     </div></div>
 
 <script>
-// Master Data Objects
-let employeeData = [
+// Baseline Default Arrays (Only used if database is empty on first startup)
+const defaultEmployees = [
     {"name": "โอ่ง", "daily_wage": 350}, {"name": "สุ", "daily_wage": 290},
     {"name": "สาย", "daily_wage": 320}, {"name": "แยม", "daily_wage": 270},
     {"name": "คนไทย", "daily_wage": 280}, {"name": "พม่า1", "daily_wage": 270},
@@ -181,7 +181,7 @@ let employeeData = [
     {"name": "พม่า6", "daily_wage": 270}
 ];
 
-let productData = [
+const defaultProducts = [
     {"name": "มือจับ", "unit": "อัน", "price": 0.6}, {"name": "ด้าม", "unit": "อัน", "price": 0.6},
     {"name": "กลอน", "unit": "อัน", "price": 1.0}, {"name": "พลั่ว", "unit": "ชิ้น", "price": 0.6},
     {"name": "พลั่วหนีบ", "unit": "ชิ้น", "price": 6.0}, {"name": "พลั่ว (เก่ง)", "unit": "โหล", "price": 20.0},
@@ -197,8 +197,26 @@ let productData = [
     {"name": "รอก", "unit": "อัน", "price": 1.0}
 ];
 
+// Active State Variables
+let employeeData = [];
+let productData = [];
 let isEditingMode = false;
 let empMap, prodMap, empNames, prodNames;
+
+// Load stored database strings or pull defaults
+function loadDataFromStorage() {
+    const storedEmp = localStorage.getItem('factory_employees');
+    const storedProd = localStorage.getItem('factory_products');
+    
+    employeeData = storedEmp ? JSON.parse(storedEmp) : [...defaultEmployees];
+    productData = storedProd ? JSON.parse(storedProd) : [...defaultProducts];
+}
+
+// Persist data strings safely inside browser memory
+function saveDataToStorage() {
+    localStorage.setItem('factory_employees', JSON.stringify(employeeData));
+    localStorage.setItem('factory_products', JSON.stringify(productData));
+}
 
 function rebuildLookups() {
     empMap = new Map(employeeData.map(e => [e.name, e.daily_wage]));
@@ -215,12 +233,13 @@ window.onload = function() {
     document.getElementById('current-date').innerText = dateStr;
     document.getElementById('doc-id').innerText = docIdStr;
     
+    loadDataFromStorage();
     rebuildLookups();
     renderSidebars();
     addWorkerCard();
 };
 
-// Toggle button function switcher
+// Toggle handler triggers localStorage commits when turned off
 function toggleEditMode() {
     isEditingMode = !isEditingMode;
     const sidebar = document.getElementById('sidebar-container');
@@ -234,6 +253,7 @@ function toggleEditMode() {
         sidebar.classList.remove('is-editing');
         button.classList.remove('active');
         button.innerText = "⚙️ แก้ไขข้อมูลรายชื่อ/ราคาสินค้า";
+        saveDataToStorage(); // Save adjustments permanently on close
     }
     renderSidebars();
 }
@@ -243,7 +263,6 @@ function renderSidebars() {
     renderSidebarProducts();
 }
 
-// Sidebar rendering handling modes intelligently
 function renderSidebarEmployees() {
     const tbody = document.getElementById('sidebar-employees-body');
     tbody.innerHTML = '';
@@ -292,7 +311,6 @@ function renderSidebarProducts() {
     });
 }
 
-// Real-time local object value updates
 function updateEmployeeField(index, field, value) {
     employeeData[index][field] = field === 'daily_wage' ? parseFloat(value) || 0 : value;
     rebuildLookups();
@@ -303,7 +321,6 @@ function updateProductField(index, field, value) {
     rebuildLookups();
 }
 
-// Insertion operations
 function addNewEmployee() {
     const nameInput = document.getElementById('new-emp-name');
     const wageInput = document.getElementById('new-emp-wage');
@@ -339,7 +356,6 @@ function addNewProduct() {
     renderSidebarProducts();
 }
 
-// Elimination loops
 function deleteEmployee(index) {
     if(confirm(`ต้องการลบพนักงาน "${employeeData[index].name}" ใช่หรือไม่?`)) {
         employeeData.splice(index, 1);
