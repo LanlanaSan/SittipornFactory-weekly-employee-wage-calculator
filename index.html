@@ -4,7 +4,7 @@
     <title>Factory Wage Calculator</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 1.2fr 2.8fr; gap: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 1.3fr 2.7fr; gap: 20px; }
         .sidebar { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); height: fit-content; }
         .main-content { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         h2, h3 { color: #2c3e50; border-bottom: 2px solid #ecf0f1; padding-bottom: 8px; margin-top: 0; }
@@ -18,7 +18,7 @@
         .metadata-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; font-size: 14px; background: #f8fafc; padding: 15px; border-radius: 6px; }
         
         .worker-card { border: 1px solid #cbd5e1; border-radius: 6px; padding: 15px; margin-bottom: 15px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .worker-header { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; margin-bottom: 12px; align-items: center; }
+        .worker-header { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; gap: 10px; margin-bottom: 12px; align-items: center; }
         .product-section { background: #f8fafc; border-radius: 4px; padding: 10px; border-left: 4px solid #3b82f6; }
         
         input[type="text"], input[type="number"] { width: 100%; box-sizing: border-box; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 14px; }
@@ -27,7 +27,7 @@
         /* Sidebar fields styling */
         .sidebar input[type="text"], .sidebar input[type="number"] { padding: 4px 6px; font-size: 13px; }
         .sidebar-actions { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 5px; margin-bottom: 20px; background: #f1f5f9; padding: 8px; border-radius: 4px; }
-        .sidebar-actions-emp { display: grid; grid-template-columns: 2fr 1.5fr auto; gap: 5px; margin-bottom: 20px; background: #f1f5f9; padding: 8px; border-radius: 4px; }
+        .sidebar-actions-emp { display: grid; grid-template-columns: 2fr 1.2fr 1.2fr auto; gap: 5px; margin-bottom: 20px; background: #f1f5f9; padding: 8px; border-radius: 4px; }
 
         /* Global buttons */
         .btn { background-color: #2563eb; color: white; border: none; padding: 10px 20px; font-size: 14px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: background 0.2s; display: inline-flex; align-items: center; justify-content: center; }
@@ -73,8 +73,9 @@
 
         <h3>👥 พนักงาน & ค่าแรง</h3>
         <div class="sidebar-actions-emp edit-mode-only">
-            <input type="text" id="new-emp-name" placeholder="ชื่อพนักงานใหม่">
-            <input type="number" id="new-emp-wage" placeholder="ค่าแรง/วัน" min="0">
+            <input type="text" id="new-emp-name" placeholder="ชื่อพนักงาน">
+            <input type="number" id="new-emp-wage" placeholder="วัน (THB)" min="0">
+            <input type="number" id="new-emp-night" placeholder="คืน (THB)" min="0">
             <button type="button" class="btn btn-sm btn-add" style="margin:0;" onclick="addNewEmployee()">เพิ่ม</button>
         </div>
         <div class="scroll-list">
@@ -83,6 +84,7 @@
                     <tr>
                         <th>ชื่อ</th>
                         <th>วัน (THB)</th>
+                        <th>คืน (THB)</th>
                         <th class="edit-mode-only edit-mode-table-cell" style="width:40px;">ลบ</th>
                     </tr>
                 </thead>
@@ -147,8 +149,8 @@
                 <thead>
                     <tr>
                         <th>ชื่อพนักงาน</th>
-                        <th>วันทำงานทั้งหมด</th>
-                        <th>ค่าแรง/วัน</th>
+                        <th>เวลาทำงานปกติ</th>
+                        <th>เวลาทำงานกลางคืน</th>
                         <th>รายการสินค้าที่ทำ</th>
                         <th>จำนวนงาน</th>
                         <th>หน่วย</th>
@@ -171,14 +173,14 @@
     </div></div>
 
 <script>
-// Baseline Default Arrays (Only used if database is empty on first startup)
+// Baseline Default Arrays with base rates and night rates (+50 default applied here)
 const defaultEmployees = [
-    {"name": "โอ่ง", "daily_wage": 350}, {"name": "สุ", "daily_wage": 290},
-    {"name": "สาย", "daily_wage": 320}, {"name": "แยม", "daily_wage": 270},
-    {"name": "คนไทย", "daily_wage": 280}, {"name": "พม่า1", "daily_wage": 270},
-    {"name": "พม่า2", "daily_wage": 270}, {"name": "พม่า3", "daily_wage": 270},
-    {"name": "พม่า4", "daily_wage": 270}, {"name": "พม่า5", "daily_wage": 270},
-    {"name": "พม่า6", "daily_wage": 270}
+    {"name": "โอ่ง", "daily_wage": 350, "night_wage": 50}, {"name": "สุ", "daily_wage": 290, "night_wage": 50},
+    {"name": "สาย", "daily_wage": 320, "night_wage": 50}, {"name": "แยม", "daily_wage": 270, "night_wage": 50},
+    {"name": "คนไทย", "daily_wage": 280, "night_wage": 50}, {"name": "พม่า1", "daily_wage": 270, "night_wage": 50},
+    {"name": "พม่า2", "daily_wage": 270, "night_wage": 50}, {"name": "พม่า3", "daily_wage": 270, "night_wage": 50},
+    {"name": "พม่า4", "daily_wage": 270, "night_wage": 50}, {"name": "พม่า5", "daily_wage": 270, "night_wage": 50},
+    {"name": "พม่า6", "daily_wage": 270, "night_wage": 50}
 ];
 
 const defaultProducts = [
@@ -197,29 +199,32 @@ const defaultProducts = [
     {"name": "รอก", "unit": "อัน", "price": 1.0}
 ];
 
-// Active State Variables
 let employeeData = [];
 let productData = [];
 let isEditingMode = false;
 let empMap, prodMap, empNames, prodNames;
 
-// Load stored database strings or pull defaults
 function loadDataFromStorage() {
-    const storedEmp = localStorage.getItem('factory_employees');
-    const storedProd = localStorage.getItem('factory_products');
+    const storedEmp = localStorage.getItem('factory_employees_v2');
+    const storedProd = localStorage.getItem('factory_products_v2');
     
-    employeeData = storedEmp ? JSON.parse(storedEmp) : [...defaultEmployees];
+    // Fallback to updating older storage keys if present
+    if(!storedEmp && localStorage.getItem('factory_employees')) {
+        const legacyData = JSON.parse(localStorage.getItem('factory_employees'));
+        employeeData = legacyData.map(e => ({...e, "night_wage": e.daily_wage + 50}));
+    } else {
+        employeeData = storedEmp ? JSON.parse(storedEmp) : [...defaultEmployees];
+    }
     productData = storedProd ? JSON.parse(storedProd) : [...defaultProducts];
 }
 
-// Persist data strings safely inside browser memory
 function saveDataToStorage() {
-    localStorage.setItem('factory_employees', JSON.stringify(employeeData));
-    localStorage.setItem('factory_products', JSON.stringify(productData));
+    localStorage.setItem('factory_employees_v2', JSON.stringify(employeeData));
+    localStorage.setItem('factory_products_v2', JSON.stringify(productData));
 }
 
 function rebuildLookups() {
-    empMap = new Map(employeeData.map(e => [e.name, e.daily_wage]));
+    empMap = new Map(employeeData.map(e => [e.name, e]));
     prodMap = new Map(productData.map(p => [p.name, p]));
     empNames = employeeData.map(e => e.name);
     prodNames = productData.map(p => p.name);
@@ -239,7 +244,6 @@ window.onload = function() {
     addWorkerCard();
 };
 
-// Toggle handler triggers localStorage commits when turned off
 function toggleEditMode() {
     isEditingMode = !isEditingMode;
     const sidebar = document.getElementById('sidebar-container');
@@ -253,7 +257,7 @@ function toggleEditMode() {
         sidebar.classList.remove('is-editing');
         button.classList.remove('active');
         button.innerText = "⚙️ แก้ไขข้อมูลรายชื่อ/ราคาสินค้า";
-        saveDataToStorage(); // Save adjustments permanently on close
+        saveDataToStorage();
     }
     renderSidebars();
 }
@@ -272,6 +276,7 @@ function renderSidebarEmployees() {
                 <tr>
                     <td><input type="text" value="${emp.name}" onchange="updateEmployeeField(${index}, 'name', this.value)"></td>
                     <td><input type="number" value="${emp.daily_wage}" onchange="updateEmployeeField(${index}, 'daily_wage', this.value)" min="0"></td>
+                    <td><input type="number" value="${emp.night_wage || (emp.daily_wage + 50)}" onchange="updateEmployeeField(${index}, 'night_wage', this.value)" min="0"></td>
                     <td class="text-center edit-mode-table-cell"><button type="button" class="btn btn-xs btn-danger" onclick="deleteEmployee(${index})">ลบ</button></td>
                 </tr>
             `;
@@ -280,6 +285,7 @@ function renderSidebarEmployees() {
                 <tr>
                     <td>${emp.name}</td>
                     <td>${emp.daily_wage.toLocaleString()}</td>
+                    <td>${(emp.night_wage || (emp.daily_wage + 50)).toLocaleString()}</td>
                 </tr>
             `;
         }
@@ -312,7 +318,11 @@ function renderSidebarProducts() {
 }
 
 function updateEmployeeField(index, field, value) {
-    employeeData[index][field] = field === 'daily_wage' ? parseFloat(value) || 0 : value;
+    if (field === 'daily_wage' || field === 'night_wage') {
+        employeeData[index][field] = parseFloat(value) || 0;
+    } else {
+        employeeData[index][field] = value;
+    }
     rebuildLookups();
 }
 
@@ -324,14 +334,17 @@ function updateProductField(index, field, value) {
 function addNewEmployee() {
     const nameInput = document.getElementById('new-emp-name');
     const wageInput = document.getElementById('new-emp-wage');
+    const nightInput = document.getElementById('new-emp-night');
     const name = nameInput.value.trim();
     const wage = parseFloat(wageInput.value) || 0;
+    const night = nightInput.value.trim() !== "" ? parseFloat(nightInput.value) : wage + 50;
     
     if(!name) { alert('กรุณากรอกชื่อพนักงาน'); return; }
     
-    employeeData.push({"name": name, "daily_wage": wage});
+    employeeData.push({"name": name, "daily_wage": wage, "night_wage": night});
     nameInput.value = '';
     wageInput.value = '';
+    nightInput.value = '';
     
     rebuildLookups();
     renderSidebarEmployees();
@@ -364,14 +377,6 @@ function deleteEmployee(index) {
     }
 }
 
-function deleteProduct(index) {
-    if(confirm(`ต้องการลบสินค้า "${productData[index].name}" ใช่หรือไม่?`)) {
-        productData.splice(index, 1);
-        rebuildLookups();
-        renderSidebarProducts();
-    }
-}
-
 // --- WORKER ENTRY GENERATION ---
 function addWorkerCard() {
     const container = document.getElementById('workers-container');
@@ -384,10 +389,12 @@ function addWorkerCard() {
     card.innerHTML = `
         <div class="worker-header">
             <div class="autocomplete-wrapper">
-                <input type="text" placeholder="เลือกหรือค้นหาชื่อพนักงาน..." class="emp-input" data-field="name" required autocomplete="off">
+                <input type="text" placeholder="เลือกชื่อพนักงาน..." class="emp-input" data-field="name" required autocomplete="off">
             </div>
-            <div><input type="number" placeholder="จำนวนวันงาน" data-field="days" value="0" min="0" step="0.5" required></div>
-            <div><input type="number" placeholder="ค่าแรง/วัน" data-field="wage" value="0" readonly style="background:#f1f5f9;"></div>
+            <div><input type="number" placeholder="วันปกติ" data-field="days" value="0" min="0" step="0.5" required title="จำนวนวันงานปกติ"></div>
+            <div><input type="number" placeholder="จำนวนคืน" data-field="nights" value="0" min="0" step="0.5" required title="จำนวนคืนทำงาน (O.T.)"></div>
+            <div><input type="number" placeholder="ค่าแรง/วัน" data-field="wage" value="0" readonly style="background:#f1f5f9;" title="ค่าแรงกลางวัน"></div>
+            <div><input type="number" placeholder="ค่าแรง/คืน" data-field="night-wage" value="0" readonly style="background:#f1f5f9;" title="ค่าแรงกลางคืน"></div>
             <div><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.worker-card').remove(); updateWorkerCount();">ลบคนงาน</button></div>
         </div>
         <div class="product-section">
@@ -404,7 +411,11 @@ function addWorkerCard() {
     container.appendChild(card);
     
     setupAutocomplete(card.querySelector('.emp-input'), () => empNames, function(val) {
-        card.querySelector('[data-field="wage"]').value = empMap.get(val) || 0;
+        const match = empMap.get(val);
+        if (match) {
+            card.querySelector('[data-field="wage"]').value = match.daily_wage || 0;
+            card.querySelector('[data-field="night-wage"]').value = match.night_wage || (match.daily_wage + 50);
+        }
     });
     
     updateWorkerCount();
@@ -489,12 +500,16 @@ function calculateWages(event) {
     workerCards.forEach(card => {
         const empName = card.querySelector('[data-field="name"]').value.trim();
         const daysWorked = parseFloat(card.querySelector('[data-field="days"]').value) || 0;
-        const baseWage = empMap.get(empName) || parseFloat(card.querySelector('[data-field="wage"]').value) || 0;
+        const nightsWorked = parseFloat(card.querySelector('[data-field="nights"]').value) || 0;
+        
+        const lookup = empMap.get(empName) || {};
+        const baseWage = lookup.daily_wage || parseFloat(card.querySelector('[data-field="wage"]').value) || 0;
+        const nightWage = lookup.night_wage || parseFloat(card.querySelector('[data-field="night-wage"]').value) || (baseWage + 50);
         
         if (!empName) return;
         totalWorkersCount++;
         
-        const baseTotalPayment = daysWorked * baseWage;
+        const totalBaseShiftPayment = (daysWorked * baseWage) + (nightsWorked * nightWage);
         const productRows = card.querySelectorAll('.product-rows-container tr');
         
         let workerProductsTotal = 0;
@@ -525,14 +540,14 @@ function calculateWages(event) {
             costDetailsHTML = '0.00';
         }
         
-        const overallIndividualSubTotal = baseTotalPayment + workerProductsTotal;
+        const overallIndividualSubTotal = totalBaseShiftPayment + workerProductsTotal;
         grandTotal += overallIndividualSubTotal;
         
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td><strong>${empName}</strong></td>
-            <td>${daysWorked} วัน</td>
-            <td>${baseWage.toLocaleString()}</td>
+            <td>${daysWorked} วัน (${baseWage}/วัน)</td>
+            <td>${nightsWorked} คืน (${nightWage}/คืน)</td>
             <td>${productDetailsHTML}</td>
             <td>${qtyDetailsHTML}</td>
             <td>${unitDetailsHTML}</td>
